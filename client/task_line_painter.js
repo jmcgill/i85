@@ -79,27 +79,27 @@ TaskLinePainter.prototype.FinishPaint = function() {
   var day_of_week = this.DayOffsetToDayOfWeek(start);
   var first_monday = (8 - day_of_week) % 7;
 
-  // Paint each Monday.
+  // Paint each weekend.
+  var pattern = this.context_.createPattern(this.stripe_pattern_image_, 'repeat');
   for (var i = 0; i <= ((end - start) / 7); ++i) {
-    var x = ((i * 7 * this.ppd_) + first_monday) + 100;
-    this.context_.strokeStyle = "gray";
-    this.context_.lineWidth = 1;
+    var x = ((i * 7 * this.ppd_) + ((first_monday - 2) * this.ppd_)) + 100;
+    
     this.context_.beginPath();
-    this.context_.moveTo(x, 0);
-    this.context_.lineTo(x, 200);
-    this.context_.stroke();
-    this.context_.closePath();
+    this.context_.fillStyle = pattern;
+    this.context_.rect(x, 0, 2 * this.ppd_, 1500);
+    this.context_.fill();
   }
 
   // Paint vacations
   // TODO(jmcgill): Refactor to paint one user?
+  
   for (var i = 0; i < this.vacations_.length; ++i) {
     var vacation = this.vacations_[i];
     var y = this.GetYForOwner(vacation.owner);
     var x = ((vacation.start_day - start) * this.ppd_) + 100;
     var x2 = ((vacation.end_day - vacation.start_day) * this.ppd_);
 
-    var pattern = this.context_.createPattern(this.stripe_pattern_image_, 'repeat');
+    this.context_.beginPath();
     this.context_.fillStyle = pattern;
     this.context_.rect(x, y - 50, x2, 100);
     this.context_.fill();
@@ -229,7 +229,7 @@ TaskLinePainter.prototype.FinishPaint = function() {
       var dep_x = ((task.derived_dep_end - start) * this.ppd_) + 100;
       this.context_.lineWidth = 0.5;
       this.context_.strokeStyle = "red";
-      this.context_.moveTo(x, 50);
+      this.context_.moveTo(x, base_y);
       this.context_.bezierCurveTo(x - 50, base_y + 100, dep_x + 50, base_y - 100, dep_x, base_y);
       this.context_.stroke();
     }
@@ -305,7 +305,7 @@ TaskLinePainter.prototype.ShowTaskInfo = function(task) {
     // Position.
     width = $(document.body).width();
     height = document.body.clientHeight;
-    this.info_div_.css('left', ((width / 2) - 250) + window.scrollLeft() + 'px');
+    this.info_div_.css('left', ((width / 2) - 250) + $(window).scrollLeft() + 'px');
     
     $(document.body).append(this.info_div_);
     var html = "<center><b>" + task.description + " (" + task.id + ")</b><br>";
