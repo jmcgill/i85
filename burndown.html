@@ -1,0 +1,30 @@
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["corechart"]});
+      google.setOnLoadCallback(drawChart);
+      function drawChart() {
+        var data = google.visualization.arrayToDataTable([
+          ['Time', 'Days Remaining'],
+          {% for entry in burndown %}
+          [{{ entry.timestamp }}, {{ entry.days_remaining }}],
+          {% endfor %}
+        ]);
+
+        var options = {
+        };
+
+        var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+        chart.draw(data, options);
+      }
+    </script>
+  </head>
+  <body>
+    <center>
+    <h1>Burndown for "{{ task.description }}"</h1>
+    <b>Owner: </b>{{ task.owner }}<br>
+    <div id="chart_div" style="width: 900px; height: 500px;"></div>
+    </center>
+  </body>
+</html>

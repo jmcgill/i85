@@ -1,0 +1,82 @@
+<html>
+<head>
+  <title>I85 Task Planner</title>
+<script src="/client/lib/jquery-1.8.2.js"></script>
+<script src="/client/task_line_painter.js"></script>
+<script src="/client/task_manager.js"></script>
+<script src="/client/bind.js"></script>
+<script src="/client/editable_table_renderer.js"></script>
+<script src="/client/main.js"></script>
+<style>
+table {
+  border: solid 1px black;
+  border-collapse: collapse;
+}
+
+td {
+  border: solid 1px black;
+  padding: 0px;
+  font-family: sans-serif;
+  font-size: 11px;
+}
+
+.inline-input {
+  border: none;
+  padding: 5px;
+}
+</style>
+<script>
+var tasks_ = [
+{% for task in tasks %}
+{
+  id: "{{ task.id }}",
+  owner: "{{ task.owner }}",
+  description: "{{ task.description }}",
+  start_day: {{ task.start_day }},
+  remaining: "{{ task.remaining }}".split(","),
+  remaining_updates: "{{ task.remaining_updates }}".split(","),
+  length: "{{ task.length }}",
+  dependent_tasks: "{{ task.dependent_tasks }}".split(',')
+},
+{% endfor %}
+]; 
+
+var vacations_ = [
+{% for vacation in vacations %}
+{
+  id: "{{ vacation.id }}",
+  owner: "{{ vacation.owner }}",
+  start_day: {{ vacation.start_day }},
+  end_day: {{ vacation.end_day }}
+},
+{% endfor %}
+]; 
+</script>
+</head>
+<body onload="main({{ editable }})">
+<center>
+  <img src="/client/images/i-85.png" height="100px"></img>
+</center>
+<br>
+<table id="tasks-table" style="width: 100%;">
+</table>
+<br><hr><br>
+<table id="vacations-table" style="width: 100%;">
+</table>
+
+<!--
+<form>
+  Owner <input type="text" id="owner"><br>
+  Task <input type="text" id="description"><br>
+  Start Date <input type="text" id="start-date"><br>
+  Length <input type="text" id="length"><br>
+  Depends On <input type="text" id="depends-on"><br>
+  <input type="button" value="Submit" onClick="addTask()"><br>
+</form>
+-->
+<br><br>
+
+<div id="timeline"></div>
+
+</body>
+</html>
