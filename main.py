@@ -55,6 +55,20 @@ def ParseDate(date_string):
 class Index(webapp2.RequestHandler):
   def get(self):
     q = db.GqlQuery("SELECT * FROM Task")
+    
+    # HACK
+    #for task in q:
+    #  u = task.remaining_updates.split(",")
+    #  u = [int(k) for k in u]
+    #  r = task.remaining.split(",")
+    #  for i in range(0, len(u)):
+    #    if u[i] > 1354337000:
+    #      del(u[i])
+    #      del(r[i])
+    #      task.remaining = ",".join([str(k) for k in r])
+    #      task.remaining_updates = ",".join([str(k) for k in u])
+    #      task.put()
+
     tasks = []
     for task in q:
       task.id = task.key().id()
@@ -96,6 +110,7 @@ class UpdateTask(webapp2.RequestHandler):
     task.start_day = ParseDate(self.request.get('start_day'))
     task.owner = self.request.get('owner')
     task.description = self.request.get('description')
+    task.long_description = self.request.get('long_description')
     task.length = self.request.get('length')
     task.dependent_tasks = self.request.get('dependent_tasks')
 
@@ -110,11 +125,19 @@ class UpdateTask(webapp2.RequestHandler):
       task.remaining = self.request.get('remaining')
       task.remaining_updates = now
 
+    # Special case - A task with a length, and a date, but no days remaining
+    # is assumed to have ocurred in the past.
+    #if self.request.get('start_day') and not self.request.get('remaining'):
+    #  update_time = task.start_day * 86400
+    #  task.remaining = self.request.get('length')
+    #  task.remaining_updates = str(update_time)
+
     task.put()
 
     output = {}
     output["id"] = str(task.key().id())
     output["owner"] = task.owner
+    output["long_description"] = task.long_description
     output["description"] = task.description
     output["start_day"] = task.start_day
     output["remaining"] = task.remaining.split(",")

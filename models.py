@@ -11,8 +11,11 @@ class Task(db.Model):
   # The owner of this task.
   owner = db.StringProperty()
   
-  # A detailed description of the task.
+  # A short description of the task.
   description = db.StringProperty()
+
+  # A longer description of the task.
+  long_description = db.StringProperty()
   
   # The day on which the task is being started, if known.
   # Stored as an integer relative to Jan 1, 1970.

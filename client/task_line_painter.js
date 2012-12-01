@@ -21,6 +21,7 @@ function TaskLinePainter(tasks, vacations, element, pixels_per_day, split_gap) {
       }
     }
   });
+  canvas.mousemove(bind(this, this.onMouseMove_));
   this.context_ = canvas.get(0).getContext("2d");
   this.canvas_ = canvas;
 
@@ -148,6 +149,7 @@ TaskLinePainter.prototype.FinishPaint = function() {
     var day_offset = this.tasks_[i].end_day - start;
     var x = (day_offset * this.ppd_) + 100;
     var base_y = this.GetYForOwner(this.tasks_[i].owner);
+    console.log('Painting task', this.tasks_[i], day_offset, x, this.tasks_[i].end_day);
 
     this.context_.strokeStyle = "black";
     this.context_.fillStyle = "white";
@@ -183,9 +185,11 @@ TaskLinePainter.prototype.FinishPaint = function() {
     this.context_.lineTo(x, base_y + (y < 0 ? -5 : 5));
     this.context_.stroke();
 
-    if (this.tasks_[i].derived_dep_end) {
-      var dep_x = ((this.tasks_[i].derived_dep_end - start) * this.ppd_) + 100;
-      var dep_y = this.GetYForOwner(this.tasks_[i].derived_dep_owner);
+    var task = this.tasks_[i];
+    for (var j = 0; j < task.dependent_endings.length; ++j) {
+      
+      var dep_x = ((task.dependent_endings[j].day - start) * this.ppd_) + 100;
+      var dep_y = this.GetYForOwner(task.dependent_endings[j].owner);
       this.context_.lineWidth = 0.5;
       this.context_.strokeStyle = "gray";
       this.context_.moveTo(x, base_y);
@@ -201,20 +205,18 @@ TaskLinePainter.prototype.FinishPaint = function() {
     var task = derived_tasks_[i];
     var day_offset = task.end_day - start;
     var x = (day_offset * this.ppd_) + 100;
+    var base_y = 100;
 
     this.context_.strokeStyle = "red";
     this.context_.fillStyle = "white";
     this.context_.lineWidth = 4;
     this.context_.beginPath();
-    this.context_.arc(x, 50, 10, 0, Math.PI * 2, false);
+    this.context_.arc(x, base_y, 10, 0, Math.PI * 2, false);
     this.context_.fill();
     this.context_.stroke();
     this.context_.closePath();
 
-    var y = 25;
-    if (i % 2) {
-      y = -40;
-    }
+    var y = base_y + 25;
 
     this.context_.font = "12px sans-serif";
     this.context_.textAlign = "center";
@@ -228,7 +230,7 @@ TaskLinePainter.prototype.FinishPaint = function() {
       this.context_.lineWidth = 0.5;
       this.context_.strokeStyle = "red";
       this.context_.moveTo(x, 50);
-      this.context_.bezierCurveTo(x - 50, 150, dep_x + 50, -50, dep_x, 50);
+      this.context_.bezierCurveTo(x - 50, base_y + 100, dep_x + 50, base_y - 100, dep_x, base_y);
       this.context_.stroke();
     }
   }
@@ -254,7 +256,71 @@ TaskLinePainter.prototype.GetTaskById = function(id) {
 
 TaskLinePainter.prototype.GetYForOwner = function(owner) {
   if (!this.split_) {
-    return 50;
+    return 100;
   }
-  return (this.split_gap_ * this.users_[owner]) + 50;
+  return (this.split_gap_ * this.users_[owner]) + 100;
+}
+
+TaskLinePainter.prototype.onMouseMove_ = function(e) {
+  var day = Math.round(((e.offsetX - 100) / this.ppd_) + this.start_);
+  var y = Math.round((e.offsetY - 100) / this.split_gap_);
+ 
+  // To which user does this task belong?
+  var task_owner;
+  for (var owner in this.users_) {
+    if (this.users_[owner] == y) task_owner = owner;
+  }
+
+  // Which task is this?
+  for (var i = 0; i < this.tasks_.length; ++i) {
+    if (this.tasks_[i].end_day == day && this.tasks_[i].owner == task_owner) {
+      this.ShowTaskInfo(this.tasks_[i]);
+      return;
+    }
+  }
+
+  this.ShowTaskInfo(null);
+}
+
+TaskLinePainter.prototype.ShowTaskInfo = function(task) {
+  if (this.shown_task_ == task) {
+    return;
+  }
+  this.shown_task_ = task;
+
+  // Do we need to hide the div?
+  if (task == null && this.info_div_) {
+    this.info_div_.remove();
+  }
+
+  // Do we need to show the div?
+  if (task) {
+    if (this.info_div_) {
+      this.info_div_.remove();
+    }
+
+    this.info_div_ = $("<div>");
+    this.info_div_.addClass("info");
+    
+    // Position.
+    width = $(document.body).width();
+    height = document.body.clientHeight;
+    this.info_div_.css('left', ((width / 2) - 250) + window.scrollLeft() + 'px');
+    
+    $(document.body).append(this.info_div_);
+    var html = "<center><b>" + task.description + " (" + task.id + ")</b><br>";
+    html += task.long_description + "<br><br></center>";
+    html += "Days remaining: " + task.computed_remaining_days + "<br>";
+    html += "Depends on: <br>";
+
+    // Find all dependent tasks.
+    for (var i = 0; i < task.dependent_tasks.length; ++i) {
+      var dep = this.GetTaskById(task.dependent_tasks[i]);
+      html += this.DayOffsetToShortDate(dep.end_day) + " - " + dep.description + "<br>";
+    }
+
+    this.info_div_.html(html);
+    var elem_height = this.info_div_.height();
+    this.info_div_.css('top', height - (elem_height + 50) + $(window).scrollTop() + 'px');
+  }
 }

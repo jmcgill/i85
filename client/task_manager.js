@@ -37,12 +37,13 @@ TaskManager.prototype.ExpandTask = function(task) {
 
   	// When can we start this task?
   	var start = Math.max(0, task.start_day);
+    task.dependent_endings = [];
   	for (var i = 0; i < task.dependent_tasks.length; ++i) {
       var dep_id = this.GetDepId(task.dependent_tasks[i]);
 
       var dep_task = this.GetTaskById(dep_id);
       if (!dep_task) {
-        console.log('Could not find task with ID: ', dep_id);
+        alert('Could not find task with ID: ', dep_id);
       }
       var dep_end_day = this.ExpandTask(dep_task);
 
@@ -50,25 +51,65 @@ TaskManager.prototype.ExpandTask = function(task) {
       dep_end_day = this.ApplyFilter(task.dependent_tasks[i], dep_end_day);
       task.derived_dep_end = dep_end_day;
       task.derived_dep_owner = dep_task.owner;
+      
+      // Track ALL dependencies for a cleaner visualization.
+      task.dependent_endings.push({
+        day: dep_end_day,
+        owner: dep_task.owner
+      });
 
+      var old_start = start;
       var start = Math.max(start, dep_end_day);
+      if (isNaN(start)) {
+        console.log('******************* ', task, i, dep_id, dep_task, dep_end_day, old_start);
+      }
   	}
     task.derived_start_day = start;
 
     // When will we end this task?
     var today = Math.floor(new Date().getTime() / 86400000);
-    var remaining_days = task.remaining[task.remaining.length - 1];
+    var remaining_days = parseInt(task.remaining[task.remaining.length - 1]);
+    var updated_at = task.remaining_updates[task.remaining_updates.length - 1];
+    var updated_day = Math.floor(updated_at / 86400);
+    var days_since_update = (today - updated_day);
+    
+    // This *should* be the actual number of days remaining on the task.
+    //var remaining_days = remaining_days - days_since_update;
+    // task.computed_remaining_days = remaining_days;
+    // console.log(today, updated_at, updated_day, days_since_update, remaining_days);
 
     // If actually 'on' the task, use remaining days since the last remaining
     // days update.
-    if (today >= start) {
-      last_update = Math.floor(
-          task.remaining_updates[task.remaining_updates.length - 1] / 86400);
-      task.end_day = last_update;
+    if (updated_day >= start) {
+      // Number of days left since the update.
+      if (updated_day > start) {
+        remaining_days = remaining_days;// - days_since_update;
+        // task.end_day = updated_at;
+      }
+      
+      task.end_day = updated_day;
+
+      console.log('Task ', task.description, 'has started. It has ', remaining_days, ' from today.');
+
     } else {
       task.end_day = task.derived_start_day;
     }
+    // task.end_day = task.derived_start_day;
 
+    // if (task.id == "1") {
+    //   console.log('*****************************************************************');
+    //   console.log('*****************************************************************');
+    //   console.log('*****************************************************************');
+    //   console.log(task, DayOffsetToShortDate(start), remaining_days, DayOffsetToShortDate(updated_day), 
+    //     DayOffsetToShortDate(task.derived_start_day), DayOffsetToShortDate(task.end_day));
+    // }
+
+    // Options:
+    // 1. The task is in the future, use start days.
+    // 2. The task has been started and then the days remaining was updated.
+    //    use days past days remaining.
+
+    task.computed_remaining_days = 0;
     while (remaining_days > 0) {
       task.end_day += 1;
       var day_of_week = this.DayOffsetToDayOfWeek(task.end_day);
@@ -83,8 +124,18 @@ TaskManager.prototype.ExpandTask = function(task) {
         continue;
       }
 
+      // Is it after now?
+      if (task.end_day >= today) {
+        task.computed_remaining_days += 1;
+      }
+
       remaining_days -= 1;
     }
+
+    //if (remaining_days < 0) {
+    //  task.end_day = today + remaining_days;
+    //  console.log('End day is: ', task.end_day);
+    //}
     return task.end_day;
 }
 

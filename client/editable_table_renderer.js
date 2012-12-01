@@ -16,16 +16,17 @@ function EditableTableRenderer(
   this.prefix_ = Math.round(Math.random() * 1000);
   this.sort_by_ = sort_by;
   this.editable_ = editable;
-}
 
-EditableTableRenderer.prototype.RenderTable = function() {
-  // Copy the source data and sort.
+  // Copy the source data and sort. We only sort when first rendering,
+  // otherwise data jumps around too much.
   this.data_ = this.source_data_.slice(0);
   var me = this;
   this.data_.sort(function (a, b) {
     return a[me.sort_by_] - b[me.sort_by_];
   });
+}
 
+EditableTableRenderer.prototype.RenderTable = function() {
   // Render headers.
   var html = "<tr style='text-align: center; font-weight: bold'>";
   html += "<td></td>"
@@ -79,6 +80,15 @@ EditableTableRenderer.prototype.renderRow = function(data, table) {
       this.renderColumn(tr, index, data.id, data[index].join(','));
     } else if (this.schema_[i][2] == "split") {
       var array = data[index];
+
+      // var today = Math.floor((new Date().getTime()) / 86400000);
+      // var remaining_days = array[array.length - 1];
+      
+      // HACK
+      // var updated_at = data.remaining_updates[data.remaining_updates.length - 1];
+      // var updated_day = Math.floor(updated_at / 86400);
+      // var days_since_update = (today - updated_day);
+    
       this.renderColumn(tr, index, data.id, array[array.length - 1]);
     } else if (this.schema_[i][2] == "immutable") {
       var td = $("<td>");
@@ -109,6 +119,7 @@ EditableTableRenderer.prototype.renderColumn = function(row, name, id, data) {
 EditableTableRenderer.prototype.onFocus = function(e) {
   this.focused_value_ = $(e.currentTarget).val();
   this.focused_id_ = $(e.currentTarget).attr('id').split('-')[0];
+  console.log(this.focused_id_);
 }
 
 EditableTableRenderer.prototype.onBlur = function(e, id) {
@@ -138,13 +149,17 @@ EditableTableRenderer.prototype.onSaved = function(response) {
   for (var i = 0; i < this.data_.length; ++i) {
     if (this.data_[i].id == response.id) {
       this.source_data_[i] = response;
+      this.data_[i] = response;
       found = true;
     }
   }
 
   if (!found) {
     this.source_data_.push(response);
+    this.data_.push(response);
     this.RenderTable();
+    
+    console.log('Refocusing on element: ',  this.focused_id_ + "-" + response.id);
     $("#" + this.focused_id_ + "-" + response.id).focus();
   }
 

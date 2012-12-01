@@ -24,6 +24,19 @@ td {
   border: none;
   padding: 5px;
 }
+
+.info {
+  background: #808080;
+  -webkit-border-radius: 5px;
+  width: 500px;
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  opacity: 0.9;
+  color: white;
+  font-family: sans-serif;
+  padding: 10px;
+}
 </style>
 <script>
 var tasks_ = [
@@ -32,6 +45,7 @@ var tasks_ = [
   id: "{{ task.id }}",
   owner: "{{ task.owner }}",
   description: "{{ task.description }}",
+  long_description: "{{ task.long_description }}",
   start_day: {{ task.start_day }},
   remaining: "{{ task.remaining }}".split(","),
   remaining_updates: "{{ task.remaining_updates }}".split(","),
@@ -54,9 +68,11 @@ var vacations_ = [
 </script>
 </head>
 <body onload="main({{ editable }})">
+<!--
 <center>
   <img src="/client/images/i-85.png" height="100px"></img>
 </center>
+-->
 <br>
 <table id="tasks-table" style="width: 100%;">
 </table>
